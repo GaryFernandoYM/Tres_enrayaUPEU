@@ -77,7 +77,6 @@ public class ControladorJuego {
         try {
             Juego juego = servicioJuego.obtenerJuegoPorId(juegoId);
 
-            // Obtener la partida actual
             Optional<Partida> partidaActual = juego.getPartidas().stream()
                     .filter(partida -> "Jugando".equals(partida.getEstado()))
                     .findFirst();
@@ -85,7 +84,6 @@ public class ControladorJuego {
             if (partidaActual.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No hay partida activa en este juego.");
             }
-// Mapear el tablero de la partida actual
 Map<Integer, String> estadoTablero = partidaActual.get().getTablero().stream()
     .collect(Collectors.toMap(
         TableroPosicion::getIndice,
