@@ -30,7 +30,7 @@ public class Partida {
     private Integer puntajeJugadorUno = 0;
     private Integer puntajeJugadorDos = 0;
 
-    @ManyToOne // Cambiado a ManyToOne para evitar restricciones únicas
+    @ManyToOne
     @JoinColumn(name = "ganador_id", nullable = true)
     private Jugador ganador;
 
@@ -45,9 +45,8 @@ public class Partida {
         this.ganador = null;
         this.puntajeJugadorUno = 0;
         this.puntajeJugadorDos = 0;
-        this.turnoActual = juego.getJugadorUno().getNombre(); // Restablece el turno inicial
+        this.turnoActual = juego.getJugadorUno().getNombre();
         
-        // Limpia todas las posiciones en el tablero
         this.tablero.forEach(pos -> pos.setNombreJugador(null));
     }
     

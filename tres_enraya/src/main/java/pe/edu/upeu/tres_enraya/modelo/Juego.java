@@ -49,7 +49,7 @@ public class Juego {
 
     @OneToMany(mappedBy = "juego", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
-    private Set<Partida> partidas = new HashSet<>(); // Cambiado a Set
+    private Set<Partida> partidas = new HashSet<>();
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "fecha_creacion", nullable = false, updatable = false)

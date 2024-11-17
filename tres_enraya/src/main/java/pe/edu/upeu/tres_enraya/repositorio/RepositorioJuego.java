@@ -9,7 +9,7 @@ import pe.edu.upeu.tres_enraya.modelo.Juego;
 
 @Repository
 public interface RepositorioJuego extends JpaRepository<Juego, Long> {
-    @EntityGraph(attributePaths = {"partidas.tablero"}) // Accede a tablero a través de partidas
+    @EntityGraph(attributePaths = {"partidas.tablero"})
     Optional<Juego> findWithPartidasById(Long id);
 }
 

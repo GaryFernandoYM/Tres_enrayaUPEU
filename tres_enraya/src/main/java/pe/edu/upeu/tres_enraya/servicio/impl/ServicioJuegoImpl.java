@@ -43,7 +43,6 @@ public Juego crearJuego(boolean esJugadorUnico, String nombreJugadorUno, String 
     repositorioJugador.save(jugadorDos);
     juego.setJugadorDos(jugadorDos);
 
-    // Crea partidas sin reutilizar IDs persistentes
     for (int i = 0; i < numeroPartidas; i++) {
         Partida partida = new Partida();
         partida.setTurnoActual(jugadorUno.getNombre());
@@ -52,13 +51,13 @@ public Juego crearJuego(boolean esJugadorUnico, String nombreJugadorUno, String 
         for (int j = 0; j < 9; j++) {
             TableroPosicion posicion = new TableroPosicion();
             posicion.setIndice(j);
-            posicion.setPartida(partida); // Establece referencia bidireccional
+            posicion.setPartida(partida);
             posiciones.add(posicion);
         }
         
         partida.setTablero(posiciones);
-        partida.setJuego(juego);  // Asocia la partida con el juego para persistencia
-        juego.agregarPartida(partida);  // Asegura el uso de una colección mutable para agregar
+        partida.setJuego(juego);
+        juego.agregarPartida(partida);
     }
 
     return repositorioJuego.save(juego);
@@ -72,7 +71,6 @@ public Juego hacerMovimiento(Long juegoId, int posicion) {
         throw new RuntimeException("No hay partida activa.");
     }
 
-    // Ordena las posiciones en el tablero para garantizar el acceso correcto por índice
     List<TableroPosicion> posicionesList = new ArrayList<>(partidaActual.getTablero());
     posicionesList.sort(Comparator.comparingInt(TableroPosicion::getIndice));
 
@@ -81,19 +79,16 @@ public Juego hacerMovimiento(Long juegoId, int posicion) {
         throw new RuntimeException("Posición ya ocupada.");
     }
 
-    // Identificar al jugador en turno
     Jugador jugadorEnTurno = partidaActual.getTurnoActual().equals(juego.getJugadorUno().getNombre())
             ? juego.getJugadorUno()
             : juego.getJugadorDos();
 
-    // Ocupa la posición actual y verifica si el jugador ha ganado
     posicionTablero.ocuparPosicion(jugadorEnTurno.getNombre());
 
     if (verificarGanador(partidaActual, jugadorEnTurno.getNombre())) {
         partidaActual.setEstado("Ganado");
         partidaActual.setGanador(jugadorEnTurno);
 
-        // Actualiza el puntaje del jugador en el juego y en la partida
         if (jugadorEnTurno.equals(juego.getJugadorUno())) {
             partidaActual.setPuntajeJugadorUno(partidaActual.getPuntajeJugadorUno() + 1);
             juego.setPuntajeJugadorUno(juego.getPuntajeJugadorUno() + 1);
@@ -105,25 +100,20 @@ public Juego hacerMovimiento(Long juegoId, int posicion) {
         verificarJuegoCompleto(juego);
 
     } else if (verificarEmpate(partidaActual)) {
-        // Si es empate, reiniciar la partida actual
         partidaActual.reiniciarPartida();
     } else {
-        // Cambia el turno al otro jugador
         partidaActual.setTurnoActual(jugadorEnTurno == juego.getJugadorUno()
                 ? juego.getJugadorDos().getNombre()
                 : juego.getJugadorUno().getNombre());
 
-        // Realiza movimiento de la máquina si es juego de un solo jugador
         if (juego.getEsJugadorUnico() && partidaActual.getTurnoActual().equals("Kaos")) {
             hacerMovimientoMaquina(partidaActual);
         }
     }
 
-    // Guardar la partida y el estado del juego
     return repositorioJuego.save(juego);
 }
 
-// Método para verificar combinaciones ganadoras en el tablero
 private boolean verificarGanador(Partida partida, String nombreJugador) {
     int[][] combinacionesGanadoras = {
         {0, 1, 2}, {3, 4, 5}, {6, 7, 8},
@@ -131,11 +121,9 @@ private boolean verificarGanador(Partida partida, String nombreJugador) {
         {0, 4, 8}, {2, 4, 6}
     };
 
-    // Convertir las posiciones a una lista ordenada por índice para simplificar el acceso
     List<TableroPosicion> posicionesList = new ArrayList<>(partida.getTablero());
     posicionesList.sort(Comparator.comparingInt(TableroPosicion::getIndice));
 
-    // Verificar cada combinación ganadora
     for (int[] combinacion : combinacionesGanadoras) {
         if (nombreJugador.equals(posicionesList.get(combinacion[0]).getNombreJugador()) &&
             nombreJugador.equals(posicionesList.get(combinacion[1]).getNombreJugador()) &&
@@ -146,8 +134,6 @@ private boolean verificarGanador(Partida partida, String nombreJugador) {
     return false;
 }
 
-
-    
     private void hacerMovimientoMaquina(Partida partida) {
     int posicion;
     List<TableroPosicion> posicionesList = new ArrayList<>(partida.getTablero());
@@ -219,7 +205,7 @@ private boolean verificarGanador(Partida partida, String nombreJugador) {
         } else if (juego.getPuntajeJugadorUno() < juego.getPuntajeJugadorDos()) {
             juego.setGanador(juego.getJugadorDos());
         } else {
-            juego.setGanador(null); // Empate
+            juego.setGanador(null);
         }
     }
 
@@ -241,43 +227,35 @@ private boolean verificarGanador(Partida partida, String nombreJugador) {
 
     @Override
     public void reiniciarJuego(Long juegoId) {
-        // Obtén el juego por su ID
         Juego juego = obtenerJuegoPorId(juegoId);
         
-        // Restablece el estado general del juego
         juego.setEstado("Jugando");
         juego.setGanador(null);
         juego.setPuntajeJugadorUno(0);
         juego.setPuntajeJugadorDos(0);
         
-        // Itera sobre cada partida asociada al juego y reinícialas
         for (Partida partida : juego.getPartidas()) {
-            partida.reiniciarPartida(); // Restaura el estado, puntajes, y el turno inicial
+            partida.reiniciarPartida();
             partida.setEstado("Jugando");
             partida.setGanador(null);
             partida.setPuntajeJugadorUno(0);
             partida.setPuntajeJugadorDos(0);
             
-            // Limpia el tablero para cada partida
             for (TableroPosicion posicion : partida.getTablero()) {
-                posicion.setNombreJugador(null); // Borra el nombre del jugador de cada posición
+                posicion.setNombreJugador(null);
             }
         }
         
-        // Guarda el juego y todas las partidas en el repositorio
         repositorioJuego.save(juego);
     }
     
 
     
     private boolean verificarEmpate(Partida partida) {
-        // Convertir el Set de posiciones en una List para simplificar el manejo
         List<TableroPosicion> posicionesList = new ArrayList<>(partida.getTablero());
     
-        // Verificar que todas las posiciones están ocupadas y que no hay un ganador
         boolean todasOcupadas = posicionesList.stream().allMatch(pos -> pos.getNombreJugador() != null);
         
-        // Es empate si todas las posiciones están ocupadas y la partida no tiene ganador
         return todasOcupadas && partida.getGanador() == null;
     }
    

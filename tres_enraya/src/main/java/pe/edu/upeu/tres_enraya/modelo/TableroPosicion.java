@@ -21,7 +21,8 @@ public class TableroPosicion {
 
     @ManyToOne
     @JoinColumn(name = "partida_id", nullable = false)
-    @JsonBackReference // Evita referencia circular con Partida
+    @JsonBackReference 
+
     private Partida partida;
 
     public void ocuparPosicion(String nombreJugador) {
