@@ -1,66 +1,155 @@
 package pe.edu.upeu.tres_enraya.servicio.impl;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
 import pe.edu.upeu.tres_enraya.modelo.Juego;
 import pe.edu.upeu.tres_enraya.modelo.Jugador;
+import pe.edu.upeu.tres_enraya.modelo.Partida;
+import pe.edu.upeu.tres_enraya.modelo.TableroPosicion;
 import pe.edu.upeu.tres_enraya.repositorio.RepositorioJuego;
 import pe.edu.upeu.tres_enraya.repositorio.RepositorioJugador;
 
-public class ServicioJuegoImplTest {
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
-    @Mock
-    private RepositorioJuego repositorioJuego;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-    @Mock
-    private RepositorioJugador repositorioJugador;
+class ServicioJuegoImplTest {
 
-    @InjectMocks
-    private ServicioJuegoImpl servicioJuego;
+    private final RepositorioJuego repositorioJuego = mock(RepositorioJuego.class);
+    private final RepositorioJugador repositorioJugador = mock(RepositorioJugador.class);
+    private final ServicioJuegoImpl servicioJuego = new ServicioJuegoImpl(repositorioJuego, repositorioJugador);
 
-    private Juego juego;
+    @Test
+    void testCrearJuego() {
+        Jugador jugadorUno = new Jugador("Jugador1");
+        Jugador jugadorDos = new Jugador("Jugador2");
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+        when(repositorioJugador.save(any(Jugador.class))).thenReturn(jugadorUno, jugadorDos);
+        when(repositorioJuego.save(any(Juego.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Configuración inicial del juego
-        juego = new Juego();
-        juego.setEsJugadorUnico(false);
-        juego.setNumeroPartidas(3);
-        juego.setJugadorUno(new Jugador("Jugador 1"));
-        juego.setJugadorDos(new Jugador("Jugador 2"));
+        Juego juego = servicioJuego.crearJuego(false, "Jugador1", "Jugador2", 3);
+
+        assertNotNull(juego);
+        assertEquals("Jugador1", juego.getJugadorUno().getNombre());
+        assertEquals("Jugador2", juego.getJugadorDos().getNombre());
+        assertEquals(3, juego.getNumeroPartidas());
+        assertEquals("Jugando", juego.getEstado());
+        verify(repositorioJugador, times(2)).save(any(Jugador.class));
+        verify(repositorioJuego, times(1)).save(any(Juego.class));
     }
 
     @Test
-    public void testCrearJuego() {
-        // Dado que el repositorioJuego y repositorioJugador están simulados,
-        // vamos a hacer que el método save retorne el juego que se crea
-        when(repositorioJuego.save(any(Juego.class))).thenReturn(juego);
-        when(repositorioJugador.save(any(Jugador.class))).thenReturn(new Jugador("Jugador 1"));
+    void testHacerMovimiento() {
+        Juego mockJuego = crearMockJuego("Jugador1", "Jugador2");
+        Partida partida = mockJuego.getPartidas().iterator().next();
+        partida.setTurnoActual("Jugador1");
 
-        Juego juegoCreado = servicioJuego.crearJuego(false, "Jugador 1", "Jugador 2", 3);
+        when(repositorioJuego.findById(1L)).thenReturn(Optional.of(mockJuego));
+        when(repositorioJuego.save(any(Juego.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertNotNull(juegoCreado, "El juego no debe ser nulo.");
-        assertEquals("Jugador 1", juegoCreado.getJugadorUno().getNombre(), "El nombre del Jugador 1 debe coincidir.");
-        assertEquals("Jugador 2", juegoCreado.getJugadorDos().getNombre(), "El nombre del Jugador 2 debe coincidir.");
-        assertEquals(3, juegoCreado.getNumeroPartidas(), "El número de partidas debe coincidir.");
+        Juego resultado = servicioJuego.hacerMovimiento(1L, 0);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.getPartidas().stream()
+                .flatMap(p -> p.getTablero().stream())
+                .anyMatch(pos -> pos.getIndice() == 0 && "Jugador1".equals(pos.getNombreJugador())));
+        verify(repositorioJuego, times(1)).findById(1L);
+        verify(repositorioJuego, times(1)).save(any(Juego.class));
     }
 
-    /*@Test
-    public void testCrearJuegoConJugadorUnico() {
-        // Configurar para un solo jugador
-        when(repositorioJuego.save(any(Juego.class))).thenReturn(juego);
-        when(repositorioJugador.save(any(Jugador.class))).thenReturn(new Jugador("Jugador 1"));
+    @Test
+    void testReiniciarJuego() {
+        Juego mockJuego = crearMockJuego("Jugador1", "Jugador2");
 
-        Juego juegoCreado = servicioJuego.crearJuego(true, "Jugador 1", null, 3);
+        when(repositorioJuego.findById(1L)).thenReturn(Optional.of(mockJuego));
 
-        assertNotNull(juegoCreado, "El juego no debe ser nulo.");
-        assertEquals("Jugador 1", juegoCreado.getJugadorUno().getNombre(), "El nombre del Jugador 1 debe coincidir.");
-        assertEquals("Kaos", juegoCreado.getJugadorDos().getNombre(), "El nombre del Jugador 2 debe ser 'Kaos'.");
-    }*/
+        servicioJuego.reiniciarJuego(1L);
+
+        assertEquals("Jugando", mockJuego.getEstado());
+        assertEquals(0, mockJuego.getPuntajeJugadorUno());
+        assertEquals(0, mockJuego.getPuntajeJugadorDos());
+        assertTrue(mockJuego.getPartidas().stream().allMatch(p -> "Jugando".equals(p.getEstado())));
+        assertTrue(mockJuego.getPartidas().stream().allMatch(p -> p.getTablero().stream()
+                .allMatch(pos -> pos.getNombreJugador() == null)));
+
+        verify(repositorioJuego, times(1)).findById(1L);
+        verify(repositorioJuego, times(1)).save(mockJuego);
+    }
+
+   
+    @Test
+    void testHacerMovimientoVsMaquina() {
+        Juego mockJuego = crearMockJuego("Jugador1", "Kaos");
+        mockJuego.setEsJugadorUnico(true);
+        Partida partida = mockJuego.getPartidas().iterator().next();
+        partida.setTurnoActual("Jugador1");
+
+        when(repositorioJuego.findById(1L)).thenReturn(Optional.of(mockJuego));
+        when(repositorioJuego.save(any(Juego.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    Juego resultado = servicioJuego.hacerMovimiento(1L, 0);
+
+    assertNotNull(resultado);
+
+    assertTrue(resultado.getPartidas().stream()
+            .flatMap(p -> p.getTablero().stream())
+            .anyMatch(pos -> pos.getIndice() == 0 && "Jugador1".equals(pos.getNombreJugador())));
+
+    assertTrue(resultado.getPartidas().stream()
+            .flatMap(p -> p.getTablero().stream())
+            .anyMatch(pos -> pos.getNombreJugador() != null && !"Jugador1".equals(pos.getNombreJugador())));
+
+    verify(repositorioJuego, times(1)).findById(1L);
+    verify(repositorioJuego, times(1)).save(any(Juego.class));
+}
+
+
+    @Test
+    void testAnularJuego() {
+        Juego mockJuego = crearMockJuego("Jugador1", "Jugador2");
+
+        when(repositorioJuego.findById(1L)).thenReturn(Optional.of(mockJuego));
+
+        servicioJuego.anularJuego(1L);
+
+        assertEquals("Anulado", mockJuego.getEstado());
+        assertEquals(0, mockJuego.getPuntajeJugadorUno());
+        assertEquals(0, mockJuego.getPuntajeJugadorDos());
+        verify(repositorioJuego, times(1)).findById(1L);
+        verify(repositorioJuego, times(1)).save(mockJuego);
+    }
+
+    private Juego crearMockJuego(String jugadorUnoNombre, String jugadorDosNombre) {
+    Juego mockJuego = new Juego();
+    mockJuego.setId(1L);
+    mockJuego.setEstado("Jugando");
+    mockJuego.setEsJugadorUnico(false);
+
+    Jugador jugadorUno = new Jugador(jugadorUnoNombre);
+    Jugador jugadorDos = new Jugador(jugadorDosNombre);
+
+    mockJuego.setJugadorUno(jugadorUno);
+    mockJuego.setJugadorDos(jugadorDos);
+
+    Partida partida = new Partida();
+    partida.setEstado("Jugando");
+    partida.setJuego(mockJuego);
+
+    Set<TableroPosicion> mockTablero = new HashSet<>();
+    for (int i = 0; i < 9; i++) {
+        TableroPosicion pos = new TableroPosicion();
+        pos.setIndice(i);
+        pos.setNombreJugador(null);
+        pos.setPartida(partida);
+        mockTablero.add(pos);
+    }
+    partida.setTablero(mockTablero);
+
+    mockJuego.setPartidas(Set.of(partida));
+    return mockJuego;
+}
+
 }
