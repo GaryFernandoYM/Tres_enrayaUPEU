@@ -46,10 +46,9 @@ public class Partida {
         this.puntajeJugadorUno = 0;
         this.puntajeJugadorDos = 0;
         this.turnoActual = juego.getJugadorUno().getNombre();
-        
+
         this.tablero.forEach(pos -> pos.setNombreJugador(null));
     }
-    
 
     @Override
     public int hashCode() {
@@ -58,8 +57,10 @@ public class Partida {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
         Partida partida = (Partida) obj;
         return id != null && id.equals(partida.id);
     }

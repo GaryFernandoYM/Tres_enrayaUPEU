@@ -21,7 +21,7 @@ public class TableroPosicion {
 
     @ManyToOne
     @JoinColumn(name = "partida_id", nullable = false)
-    @JsonBackReference 
+    @JsonBackReference
 
     private Partida partida;
 
