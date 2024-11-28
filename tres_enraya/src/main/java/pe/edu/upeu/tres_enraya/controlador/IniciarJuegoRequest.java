@@ -18,7 +18,6 @@ public class IniciarJuegoRequest {
     @Min(1)
     private int numeroPartidas;
 
-    // Getters y setters
     public boolean isEsJugadorUnico() {
         return esJugadorUnico;
     }

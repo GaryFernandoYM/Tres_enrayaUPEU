@@ -30,16 +30,22 @@ public class ServicioJuegoImpl implements ServicioJuego {
     private final Random random = new Random();
 
     @Override
-    public Juego crearJuego(boolean esJugadorUnico, String nombreJugadorUno, String nombreJugadorDos,
-            int numeroPartidas) {
+    public Juego crearJuego(boolean esJugadorUnico, String nombreJugadorUno, String nombreJugadorDos, int numeroPartidas) {
+        if (nombreJugadorUno == null || nombreJugadorUno.trim().isEmpty() || nombreJugadorUno.trim().length() < 3) {
+            throw new IllegalArgumentException("El nombre del primer jugador debe tener al menos 3 caracteres.");
+        }
+        if (!esJugadorUnico && (nombreJugadorDos == null || nombreJugadorDos.trim().isEmpty() || nombreJugadorDos.trim().length() < 3)) {
+            throw new IllegalArgumentException("El nombre del segundo jugador debe tener al menos 3 caracteres.");
+        }
+    
         Juego juego = new Juego();
         juego.setEsJugadorUnico(esJugadorUnico);
         juego.setNumeroPartidas(numeroPartidas);
-
+    
         Jugador jugadorUno = new Jugador(nombreJugadorUno);
         repositorioJugador.save(jugadorUno);
         juego.setJugadorUno(jugadorUno);
-
+    
         Jugador jugadorDos = esJugadorUnico ? new Jugador("Kaos") : new Jugador(nombreJugadorDos);
         repositorioJugador.save(jugadorDos);
         juego.setJugadorDos(jugadorDos);
@@ -170,9 +176,12 @@ public class ServicioJuegoImpl implements ServicioJuego {
 
     @Override
     public Juego obtenerJuegoPorId(Long juegoId) {
+        // Buscar el juego en el repositorio por su ID
         return repositorioJuego.findById(juegoId)
                 .orElseThrow(() -> new RuntimeException("Juego con ID " + juegoId + " no encontrado."));
     }
+ 
+
 
     @Override
     public Juego actualizarEstadoJuego(Long juegoId, String estado, String ganador, Integer puntaje) {
