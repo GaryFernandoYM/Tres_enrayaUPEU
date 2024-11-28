@@ -9,4 +9,5 @@ public interface ServicioJuego {
     void anularJuego(Long juegoId);
     void reiniciarJuego(Long juegoId);
     Juego obtenerJuegoPorId(Long juegoId);
+
 }
